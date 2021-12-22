@@ -1,0 +1,153 @@
+Myriem Moulouel
+____________________________
+Sécurité et confidentialité
+TP2 : Chiffrement asymétrique
+____________________________
+
+
+
+##################################################################################################################
+##################################################################################################################
+**1 Génération de clé rsa
+______________________
+
+------------------------------------------------------------------------------------------------------------------
+1)
+la commande pour la génération de la clé :
+openssl genrsa -out f.pem 1024
+
+------------------------------------------------------------------------------------------------------------------
+2)
+la longueur des 2 nombres premiers est 65 bytes
+
+
+
+##################################################################################################################
+##################################################################################################################
+**2 Chiffrement
+__________________________
+
+------------------------------------------------------------------------------------------------------------------
+3)
+la taille du fichier chiffré secret1:
+avec la commande : wc -c secret
+la taille = 128 bytes ( octets)
+parce que le fichier chiffré doit avoir la même taille que le fichier qu'on chiffre
+128 octets = 1024 bits
+
+
+
+------------------------------------------------------------------------------------------------------------------
+4)
+après la commande :
+echo f.pem|openssl rsautl -pubin -inkey f.pub -encrypt -out secret2 -oaep
+on crée un second fichier de chiffrement
+les deux fichiers sercret1 et secret2 ne sont pas identiques car:
+
+cmp secret1 secret2
+donne: secret1 secret2 differ: byte 1, line 1 => différents
+
+parce qu'on veut que ça soit aléatoire et qu'un fichier ne dépende pas seulement de son chiffrement
+
+
+
+------------------------------------------------------------------------------------------------------------------
+5)
+la commande :
+openssl rsautl -inkey f.pem -in secret1 -decrypt -oaep
+donne : f.pem
+
+openssl rsautl -inkey f.pem -in secret2 -decrypt -oaep
+donne : f.pem
+
+La commande demande un mot de passe car le fichier f.pem est chiffré par l'algorithme des3
+
+
+##################################################################################################################
+##################################################################################################################
+**3 Signature
+__________________________
+
+------------------------------------------------------------------------------------------------------------------
+6)
+la premiere commande demande un mot de passe et pas la deuxième car la deuxième est une vérification et elle peut être effectuée par n'importe qui
+
+
+------------------------------------------------------------------------------------------------------------------
+7)
+
+| copier le fichier passwd     : cp /etc/passwd passwd
+
+| on chiffre passwd            : openssl dgst -sha256 -out passwd.sig -sign f.pem passwd
+| on vérifie la signature      : openssl dgst -sha256 -signature passwd.sig -verify f.pub passwd
+---| vérification approuvée    : Verified OK
+
+| on modifie le fichier passwd : echo /bin >> passwd
+
+| on vérifie la signature      : openssl dgst -sha256 -signature passwd.sig -verify f.pub passwd
+---| message d'erreur          : Verification Failure
+
+
+------------------------------------------------------------------------------------------------------------------
+8)
+On ne peut pas savoir ce qui a été modifié, on peut juste vérifier la signature
+
+
+##################################################################################################################
+##################################################################################################################
+**4 Echange de fichiers chiffrés et signés
+__________________________
+
+------------------------------------------------------------------------------------------------------------------
+9)
+- on crée deux répértoires source et destination
+- on crée une clé privée et publique pour chacun des répertoires
+    | dans le répertoire source on tape : 
+       | openssl genrsa -out p.pem
+       | openssl rsa -in p.pem -pubout -out p.pub
+
+    | dans le répertoire  destination on tape :
+       | openssl genrsa -out g.pem
+       | openssl rsa -in g.pem -pubout -out g.pub
+
+- on envoie les clés pubiques (f.pub et g.pub) dans chacun des répertoire voisin
+    | dans le répertoire source on tape :
+    ---| cp p.pub ./destination/p.pub
+
+    | dans le répertoire  destination on tape : 
+    ---| cp g.pub ./source/g.pub
+
+- on crée un fichier fichier.txt qui contient une phrase dans le répertoire source
+    | echo bonjour le monde ! >> fichier.txt
+
+- dans source, on chiffre fichier.txt avec la clé publique de destination (g.pub) déjà envoyée
+    | dans le répertoire source on tape : 
+       | openssl rsautl -pubin -inkey g.pub -encrypt -in fichier.txt -out fichier.encrypt -oaep
+
+- on envoie le fichier chiffré à destination
+    | dans le répertoire source on tape :
+        | cp fichier.encrypt ../destination/fichier.encrypt
+
+- avec la clé privé dans destination (g.pem) on déchiffre le message envoyé
+    | dans le répertoire  destination on tape :
+       | openssl rsautl -inkey ../destination/g.pem -in fichier.encrypt -decrypt -out fichier.txt -oaep
+======> le contenu du fichier est le même
+
+------------------------------------------------------------------------------------------------------------------
+10)
+- on signe fichier.txt avec la clé de source (f.pem) => création de fichier.sig (sa signature)
+    | dans le répertoire source on tape :     
+        | openssl dgst -sha256 -out fichier.sig -sign p.pem fichier.txt
+
+- on envoie la signature fichier.sig au répertoire destination
+    | dans le répertoire source on tape :
+    ---| cp fichier.txt ./destination/fichier.txt
+
+=====> on doit vérifier la signature de fichier.txt dans le répertoire destination
+    | dans le répertoire on tape destination : 
+    ---| openssl dgst -sha256 -signature fichier.sig -verify p.pub fichier.txt 
+        ---| vérification approuvée : Verified OK
+
+
+
+

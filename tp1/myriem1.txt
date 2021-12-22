@@ -1,0 +1,107 @@
+Myriem Moulouel
+____________________________
+Sécurité et confidentialité
+TP1 : Chiffrement symétrique
+____________________________
+
+
+
+##################################################################################################################
+##################################################################################################################
+**2 Algorithme de hash
+______________________
+
+------------------------------------------------------------------------------------------------------------------
+1)
+pour blake2b512 ->
+command : time openssl dgst -blake2b512 /boot/vmlinuz
+BLAKE2b512(/boot/vmlinuz)= c834c68a56b6b09b03ed8d520f08cb80ce4cb893a1d8086ed804db48afb4958ecc6709c0012d2c49d0b84186c80311cc777f40b288de94544cae51e7a93a18ef
+
+real	0m0,031s
+user	0m0,018s
+sys	    0m0,010s
+
+pour sha3-512 ->  
+command : time openssl dgst -sha3-512 /boot/vmlinuz
+SHA3-512(/boot/vmlinuz)= 676d39c2841ac9aea57f5b6b5b8e5bf67c2b507801e716814125108c2f810436b29ed175c761bf9db94b6045b1e2c20d8b7e429bad89e21598fdc5bda2ebeee1
+
+real	0m0,083s
+user	0m0,063s
+sys	    0m0,009s
+
+blake2512 est la plus rapide, l'ordre de grandeur est 2 plus rapide
+
+
+** après modification du fichier /boot/vmlinuz dans le fichier modif, les hash des deux fichiers sont differents.
+Sinon les temps de calcul (à alogorithme égal) sont près que pareils
+
+------------------------------------------------------------------------------------------------------------------
+2)
+Conclusion: blake2512 est plus rapide
+
+
+------------------------------------------------------------------------------------------------------------------
+# on construit deux fichier f11 et f22 comme demandé:
+3)
+Le rang de la premiere difference est l'octet 20.
+
+
+------------------------------------------------------------------------------------------------------------------
+4)
+openssl dgst -md5 f11
+MD5(f11)= 79054025255fb1a26e4bc422aef54eb4
+
+et 
+
+openssl dgst -md5 f22
+MD5(f22)= 79054025255fb1a26e4bc422aef54eb4
+
+il y a des collisions avec md5
+
+
+------------------------------------------------------------------------------------------------------------------
+5)
+après concatenation:
+echo 1 >> f1
+echo 2 >> f2
+
+on verifie le chiffrement
+
+openssl dgst -md5 f11
+MD5(f11)= 6f07f1999ff30af1ce7299887e89fd3f
+
+openssl dgst -md5 f22
+MD5(f22)= 6f07f1999ff30af1ce7299887e89fd3f
+
+Il y a collision
+
+
+##################################################################################################################
+##################################################################################################################
+**3 Chiffrement symétrique
+__________________________
+
+------------------------------------------------------------------------------------------------------------------
+6)
+2 chiffrements avec le même mot de passe donnent deux fichiers différents car on a ajouté l'option -salt
+
+
+------------------------------------------------------------------------------------------------------------------
+7)
+en remplaçant l'option -salt par -nosalt, 2 chiffrements avec le même mot de passe donne exactement deux fichiers similaires
+
+
+------------------------------------------------------------------------------------------------------------------
+8)
+en chifferant les deux fichiers 
+F1 : 12345678abcdefgh
+F2 : abcdefgh12345678
+
+avec 
+openssl enc -des-ecb -nosalt -iter 10 -p -in F1 -out F1pw
+et
+openssl enc -des-ecb -nosalt -iter 10 -p -in F2 -out F2pw
+
+on constate que le contenu des deux fichiers contient une partie fixe (les derniers caractères) pareille pour les deux chiffrements
+
+
